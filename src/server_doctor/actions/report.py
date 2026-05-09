@@ -65,6 +65,27 @@ class ReportAction:
         """Report WebSocket inventory."""
         self._reporter.report_wss_inventory(inventory)
 
+    def report_inventory(self, inventory: list, base: str) -> None:
+        """Report filesystem inventory."""
+        if self.format_mode == "json":
+            return
+            
+        self.console.print(f"\n[bold]Filesystem Inventory[/] (scanned {base})")
+        self.console.print()
+        
+        configured = [item for item in inventory if item["status"] == "configured"]
+        unreferenced = [item for item in inventory if item["status"] == "unreferenced"]
+        
+        if configured:
+            self.console.print(f"[green]✓ Configured projects:[/] {len(configured)}")
+            for item in configured:
+                self.console.print(f"  • {item['path']} ({item['type'].value})")
+        
+        if unreferenced:
+            self.console.print(f"[yellow]⚠ Unreferenced projects:[/] {len(unreferenced)}")
+            for item in unreferenced:
+                self.console.print(f"  • {item['path']} ({item['type'].value})")
+
     def report_recommendations(self, recommendations: list[Recommendation]) -> None:
         """Display recommendations (Legacy bridge or move to strategies if needed)."""
         # For now, keeping legacy logic in here or moving it to base/concrete

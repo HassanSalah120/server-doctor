@@ -1158,7 +1158,7 @@ def ci(
     try:
         with SSHConnector(cfg) as ssh:
             # Run scan
-            findings = _run_full_scan(ssh, cfg, timeout)
+            findings = _run_full_scan(ctx, ssh, cfg, timeout)
             scan_duration = time.time() - start_time
             
             # Format output
@@ -1199,68 +1199,74 @@ def ci(
         sys.exit(3)
 
 
-def _run_full_scan(ssh, cfg: SSHConfig, timeout: int) -> list:
+def _run_full_scan(ctx, ssh, cfg: SSHConfig, timeout: int) -> list:
     """Run complete scan and return findings."""
-    scanners = [
-        NginxScanner(),
-        PHPScanner(),
-        DockerScanner(),
-        NodeScanner(),
-        MySQLScanner(),
-        CertbotScanner(),
-        NetworkSurfaceScanner(),
-        FirewallScanner(),
-        SystemdScanner(),
-        RedisScanner(),
-        SecurityBaselineScanner(),
-        TelemetryScanner(),
-        VulnerabilityScanner(),
-        WorkerScanner(),
-        TLSStatusScanner(),
-        UpstreamProbeScanner(),
-    ]
+    # Get the model using the same logic as other commands
+    model = _scan_server(ctx, ssh)
     
-    fs = FilesystemScanner(ssh)
-    model = fs.scan()
-    
-    for scanner in scanners:
-        scanner.scan(model, ssh)
-    
-    # Analyze
-    doctor = ServerDoctorAnalyzer()
-    doctor.analyze(model, ConfigManager(), cfg)
-    
-    # Run auditors
-    auditors = [
-        ServerAuditor(model),
-        AppDetector(model),
-    ]
-    
+    # Run diagnosis like the check command
+    dr_analyzer = ServerDoctorAnalyzer(model)
+    from server_doctor.analyzer.wss_auditor import WSSAuditor
+    from server_doctor.analyzer.docker_auditor import DockerAuditor
+    from server_doctor.analyzer.node_auditor import NodeAuditor
+    from server_doctor.analyzer.systemd_auditor import SystemdAuditor
+    from server_doctor.analyzer.redis_auditor import RedisAuditor
+    from server_doctor.analyzer.worker_auditor import WorkerAuditor
+    from server_doctor.analyzer.mysql_auditor import MySQLAuditor
+    from server_doctor.analyzer.firewall_auditor import FirewallAuditor
+    from server_doctor.analyzer.telemetry_auditor import TelemetryAuditor
+    from server_doctor.analyzer.security_baseline_auditor import SecurityBaselineAuditor
+    from server_doctor.analyzer.vulnerability_auditor import VulnerabilityAuditor
+    from server_doctor.analyzer.network_surface_auditor import NetworkSurfaceAuditor
     from server_doctor.analyzer.path_conflict_auditor import PathConflictAuditor
-    from server_doctor.checks.security.security_auditor import SecurityAuditor
-    from server_doctor.checks.performance.performance_auditor import PerformanceAuditor
-    from server_doctor.checks.websocket.wss_auditor import WSSAuditor
-    
-    auditors.extend([
-        PathConflictAuditor(model),
-        SecurityAuditor(model),
-        PerformanceAuditor(model),
-        WSSAuditor(model),
-    ])
-    
-    all_findings = []
-    for auditor in auditors:
+    from server_doctor.analyzer.runtime_drift_auditor import RuntimeDriftAuditor
+    from server_doctor.analyzer.certbot_auditor import CertbotAuditor
+
+    wss_auditor = WSSAuditor(model)
+    def _safe_audit(label: str, fn):
         try:
-            findings = auditor.audit()
-            all_findings.extend(findings)
+            return fn()
         except Exception:
-            pass
+            return []
     
-    # Correlate
-    engine = CorrelationEngine()
-    engine.process(model, all_findings)
+    legacy_findings = dr_analyzer.diagnose(
+        additional_findings=(
+            ServerAuditor(model).audit()
+            + _safe_audit("WSS", wss_auditor.audit)
+            + _safe_audit("Docker", DockerAuditor(model).audit)
+            + _safe_audit("Node", NodeAuditor(model).audit)
+            + _safe_audit("Systemd", SystemdAuditor(model).audit)
+            + _safe_audit("Redis", RedisAuditor(model).audit)
+            + _safe_audit("Worker", WorkerAuditor(model).audit)
+            + _safe_audit("MySQL", MySQLAuditor(model).audit)
+            + _safe_audit("Firewall", FirewallAuditor(model).audit)
+            + _safe_audit("Telemetry", TelemetryAuditor(model).audit)
+            + _safe_audit("SecurityBaseline", SecurityBaselineAuditor(model).audit)
+            + _safe_audit("Vulnerability", VulnerabilityAuditor(model).audit)
+            + _safe_audit("NetworkSurface", NetworkSurfaceAuditor(model).audit)
+            + _safe_audit("PathConflict", PathConflictAuditor(model).audit)
+            + _safe_audit("RuntimeDrift", RuntimeDriftAuditor(model).audit)
+            + _safe_audit("Certbot", CertbotAuditor(model).audit)
+        )
+    )
+
+    # Keep check command strict by running modular checks by default.
+    from server_doctor.checks import CheckContext, run_checks
+    from server_doctor.engine.deduplication import deduplicate_findings
+
+    check_ctx = CheckContext(
+        model=model,
+        ssh=ssh,
+        laravel_enabled=True,
+        ports_enabled=True,
+        security_enabled=True,
+        phpfpm_enabled=True,
+        performance_enabled=True,
+        devops_enabled=True,
+    )
+    findings = deduplicate_findings(legacy_findings + run_checks(check_ctx))
     
-    return all_findings
+    return findings
 
 
 @main.group()
@@ -1292,16 +1298,21 @@ def slack_setup(ctx: click.Context, webhook: str, channel: str | None, only_crit
 def notify_test(ctx: click.Context) -> None:
     """Send a test notification to verify configuration."""
     from server_doctor.integrations.notifier import NotificationManager
+    from server_doctor.model.finding import Finding
+    from server_doctor.model.evidence import Evidence, Severity
     
     config_mgr = ctx.obj["config_mgr"]
     notifier = NotificationManager(config_mgr)
     
-    test_finding = {
-        "id": "TEST-001",
-        "severity": "WARNING",
-        "condition": "Test notification",
-        "cause": "This is a test to verify notification settings.",
-    }
+    test_finding = Finding(
+        id="TEST-001",
+        severity=Severity.WARNING,
+        condition="Test notification",
+        cause="This is a test to verify notification settings.",
+        evidence=[],
+        treatment="No action needed",
+        impact=[]
+    )
     
     success = notifier.send_notification([test_finding])
     if success:
