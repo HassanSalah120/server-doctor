@@ -9,9 +9,12 @@ IMPORTANT: This module only ORCHESTRATES. It never reasons or makes decisions.
 """
 
 import contextlib
+import json
 import os
 import re
+import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 from rich.console import Console
@@ -28,6 +31,9 @@ from server_doctor.actions.report_bundle import ReportBundleAction
 from server_doctor.analyzer.app_detector import AppDetector
 from server_doctor.analyzer.server_doctor import ServerDoctorAnalyzer
 from server_doctor.analyzer.server_auditor import ServerAuditor
+
+if TYPE_CHECKING:
+    from server_doctor.model.server import ProjectInfo
 from server_doctor.config import ConfigManager
 from server_doctor.connector.ssh import SSHConfig, SSHConnector
 from server_doctor.engine.decision import DecisionEngine

@@ -5,8 +5,12 @@ It finds web roots, project directories, and relevant files.
 """
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from server_doctor.connector.ssh import SSHConnector
+
+if TYPE_CHECKING:
+    from server_doctor.model.server import OSInfo
 
 
 @dataclass

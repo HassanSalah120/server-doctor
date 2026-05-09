@@ -5,10 +5,14 @@ filesystem structure collected by the scanner.
 """
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 import json
 
 from server_doctor.model.server import ProjectInfo, ProjectType
 from server_doctor.scanner.filesystem import DirectoryScan
+
+if TYPE_CHECKING:
+    from server_doctor.model.server import DockerContainer
 
 
 @dataclass

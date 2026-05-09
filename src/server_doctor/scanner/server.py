@@ -5,8 +5,12 @@ Parsing is handled by the parser module.
 """
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from server_doctor.connector.ssh import SSHConnector
+
+if TYPE_CHECKING:
+    from server_doctor.model.server import NginxInfo
 
 
 @dataclass

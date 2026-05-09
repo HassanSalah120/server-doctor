@@ -162,7 +162,6 @@ async def stop_daemon() -> dict[str, Any]:
 @router.get("/status", response_model=DaemonStatusResponse)
 async def get_daemon_status() -> DaemonStatusResponse:
     """Get daemon status."""
-    global daemon_instance
     
     # Check both global instance and PID file
     daemon = daemon_instance or MonitoringDaemon(pid_file=PID_FILE)
@@ -232,7 +231,6 @@ async def trigger_manual_scan(
     server_ids: list[int] | None = Body(default=None),
 ) -> dict[str, Any]:
     """Trigger immediate scan via daemon."""
-    global daemon_instance
     
     if not daemon_instance or not daemon_instance.is_running():
         raise HTTPException(status_code=400, detail="Daemon not running")

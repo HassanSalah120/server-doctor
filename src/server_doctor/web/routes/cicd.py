@@ -4,6 +4,7 @@ Provides endpoints for CI/CD integrations, API tokens, and export formats.
 """
 
 import json
+import secrets
 from datetime import datetime
 from typing import Any
 

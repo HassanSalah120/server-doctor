@@ -10,6 +10,7 @@ IMPORTANT: All findings MUST include evidence with:
 """
 
 import re
+from typing import TYPE_CHECKING
 
 from server_doctor.model.evidence import Evidence, Severity
 from server_doctor.model.finding import Finding
@@ -20,6 +21,9 @@ from server_doctor.model.server import (
     ServerBlock,
     ServerModel,
 )
+
+if TYPE_CHECKING:
+    from server_doctor.model.server import LocationBlock
 
 
 class ServerDoctorAnalyzer:
