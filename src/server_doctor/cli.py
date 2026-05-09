@@ -1307,11 +1307,19 @@ def notify_test(ctx: click.Context) -> None:
     test_finding = Finding(
         id="TEST-001",
         severity=Severity.WARNING,
+        confidence=1.0,
         condition="Test notification",
         cause="This is a test to verify notification settings.",
-        evidence=[],
+        evidence=[
+            Evidence(
+                source_file="server-doctor",
+                line_number=0,
+                excerpt="Test notification payload",
+                command="server-doctor notify test",
+            )
+        ],
         treatment="No action needed",
-        impact=[]
+        impact=["Verify notification integration"],
     )
     
     success = notifier.send_notification([test_finding])
