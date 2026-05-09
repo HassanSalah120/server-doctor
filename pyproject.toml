@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "server-doctor"
+version = "1.7.0"
+description = "AI-Driven Infrastructure Diagnosis System for Nginx + PHP Applications"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Hassan Salah", email = "hassansalah120120@gmail.com" }
+]
+keywords = ["nginx", "devops", "ssh", "laravel", "php", "server", "diagnostics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "paramiko>=3.4.0",
+    "click>=8.1.0",
+    "rich>=13.7.0",
+    "PyYAML>=6.0.0",
+    "jinja2>=3.1.0",
+    "keyring>=24.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.27.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+server-doctor = "server_doctor.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/server-doctor"
+Documentation = "https://github.com/yourusername/server-doctor#readme"
+Repository = "https://github.com/yourusername/server-doctor"
+Issues = "https://github.com/yourusername/server-doctor/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/server_doctor"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

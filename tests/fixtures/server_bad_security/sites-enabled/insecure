@@ -1,0 +1,26 @@
+server {
+    listen 80;
+    server_name insecure.com;
+    root /var/www/html;
+    
+    # NGX-SEC-2: Autoindex enabled
+    location /uploads {
+        autoindex on;
+    }
+
+    # NGX-SEC-3: No dotfile protection
+    # (Missing location ~ /\. block)
+
+    # NGX-SEC-4: PHP in uploads
+    location /uploads/ {
+        # This shouldn't be here allowing PHP execution
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+    }
+    
+    # SEC-HEAD-1: Missing security headers
+    # (No add_header directives)
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

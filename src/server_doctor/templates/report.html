@@ -1,0 +1,2540 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Doctor - Diagnostic Report: {{ model.hostname }}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #020617;
+        color: #f8fafc;
+      }
+      .heading-font {
+        font-family: "Outfit", sans-serif;
+      }
+      .glass {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .glass-hover:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .sidebar {
+        width: 260px;
+        transition: all 0.3s ease;
+      }
+      .nav-link.is-active {
+        background: rgba(56, 189, 248, 0.2) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        box-shadow: 0 12px 30px rgba(56, 189, 248, 0.15);
+      }
+      body.ui-compact {
+        font-size: 14px;
+      }
+      body.ui-compact .sidebar {
+        width: 236px;
+      }
+      body.ui-compact main {
+        padding: 1rem !important;
+      }
+      @media (min-width: 768px) {
+        body.ui-compact main {
+          padding: 1.25rem !important;
+        }
+      }
+      @media (min-width: 1024px) {
+        body.ui-compact main {
+          padding: 1.5rem !important;
+        }
+      }
+      body.ui-compact .heading-font.text-4xl {
+        font-size: 2rem !important;
+        line-height: 1.15;
+      }
+      body.ui-compact .heading-font.text-3xl {
+        font-size: 1.7rem !important;
+        line-height: 1.2;
+      }
+      body.ui-compact .glass {
+        border-radius: 1.1rem !important;
+      }
+      body.ui-compact .card {
+        padding: 1rem !important;
+        border-radius: 1rem !important;
+      }
+      body.ui-compact .mb-12 {
+        margin-bottom: 2rem !important;
+      }
+      body.ui-compact .gap-6 {
+        gap: 1rem !important;
+      }
+      body.ui-compact .gap-4 {
+        gap: 0.75rem !important;
+      }
+      body.ui-compact table th,
+      body.ui-compact table td {
+        padding-top: 0.65rem !important;
+        padding-bottom: 0.65rem !important;
+      }
+      @media (max-width: 1024px) {
+        .sidebar {
+          display: none;
+        }
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .custom-gradient {
+        background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              critical: "#ef4444",
+              warning: "#f59e0b",
+              info: "#3b82f6",
+              success: "#10b981",
+              accent: "#38bdf8",
+              background: "#020617",
+              surface: "#0f172a",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen ui-compact">
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside
+        class="sidebar h-full glass border-r border-white/10 flex flex-col z-50"
+      >
+        <div class="p-8">
+          <div class="flex items-center gap-3 mb-8">
+            <div
+              class="w-10 h-10 custom-gradient rounded-xl flex items-center justify-center shadow-lg shadow-accent/20"
+            >
+              <i data-lucide="stethoscope" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+              <h1 class="heading-font text-xl font-extrabold tracking-tight">
+                ServerDoctor
+              </h1>
+              <p
+                class="text-[10px] uppercase tracking-widest text-accent font-bold"
+              >
+                Server Intelligence
+              </p>
+            </div>
+          </div>
+
+          <nav class="space-y-2">
+            <a
+              href="#overview"
+              data-target="overview"
+              class="nav-link is-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+              Dashboard
+            </a>
+            <a
+              href="#infrastructure"
+              data-target="infrastructure"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="shield" class="w-5 h-5"></i>
+              Infrastructure
+            </a>
+            <a
+              href="#architecture"
+              data-target="architecture"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="workflow" class="w-5 h-5"></i>
+              Topology
+            </a>
+            <a
+              href="#risk-split"
+              data-target="risk-split"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              Risk Split
+            </a>
+            <a
+              href="#action-plan"
+              data-target="action-plan"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="list-checks" class="w-5 h-5"></i>
+              Action Plan
+            </a>
+            <a
+              href="#trend"
+              data-target="trend"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="trending-up" class="w-5 h-5"></i>
+              Trend
+            </a>
+            <a
+              href="#projects"
+              data-target="projects"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="folders" class="w-5 h-5"></i>
+              Projects
+            </a>
+            <a
+              href="#findings"
+              data-target="findings"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="activity" class="w-5 h-5"></i>
+              Findings
+            </a>
+            <a
+              href="#artifacts"
+              data-target="artifacts"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="file-json" class="w-5 h-5"></i>
+              Raw Artifacts
+            </a>
+            {% if ws_inventory %}
+            <a
+              href="#websocket"
+              data-target="websocket"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <i data-lucide="zap" class="w-5 h-5"></i>
+              WebSockets
+            </a>
+            {% endif %}
+          </nav>
+        </div>
+
+        <div class="mt-auto p-8">
+          <div class="p-4 rounded-2xl glass border-white/5 bg-white/5">
+            <p class="text-xs text-slate-400 mb-2">Report Generated</p>
+            <p class="text-sm font-bold">{{ now }}</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main
+        id="report-main"
+        class="flex-1 overflow-y-auto scroll-smooth p-6 md:p-8 lg:p-12 scrollbar-hide"
+      >
+        <!-- Header Bar -->
+        <div
+          class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12"
+        >
+          <div>
+            <h2 class="heading-font text-4xl font-extrabold text-white mb-2">
+              Diagnostic Report
+            </h2>
+            <div class="flex items-center gap-4">
+              <span
+                class="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300 text-sm font-medium"
+              >
+                <i data-lucide="server" class="w-4 h-4 text-accent"></i>
+                {{ model.hostname }}
+              </span>
+              <span
+                id="health-badge"
+                class="px-3 py-1 rounded-full text-sm font-bold"
+              ></span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              id="ui-density-toggle"
+              type="button"
+              class="px-4 py-2 rounded-xl border border-white/10 glass hover:bg-white/5 transition-all text-xs font-semibold flex items-center gap-2"
+            >
+              <i data-lucide="panel-top-close" class="w-4 h-4"></i>
+              <span id="ui-density-label">Compact UI</span>
+            </button>
+            <button
+              onclick="window.print()"
+              class="px-5 py-2.5 rounded-xl border border-white/10 glass hover:bg-white/5 transition-all text-sm font-semibold flex items-center gap-2"
+            >
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              Export PDF
+            </button>
+            <div class="w-[1px] h-8 bg-white/10 mx-2"></div>
+            <div class="flex -space-x-3">
+              <div
+                class="w-10 h-10 rounded-full border-2 border-background glass flex items-center justify-center overflow-hidden"
+                title="Nginx"
+              >
+                <img
+                  src="https://nginx.org/nginx.png"
+                  class="w-6 opacity-80"
+                  alt="Nginx"
+                />
+              </div>
+              <div
+                class="w-10 h-10 rounded-full border-2 border-background glass flex items-center justify-center overflow-hidden"
+                title="PHP"
+              >
+                <i data-lucide="code" class="w-5 text-accent"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div
+          id="overview"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+        >
+          <!-- OS Info -->
+          <div
+            class="card glass p-6 rounded-[2rem] glass-hover transition-all relative overflow-hidden group"
+          >
+            <div
+              class="absolute -right-4 -top-4 w-24 h-24 bg-accent/10 rounded-full blur-3xl group-hover:bg-accent/20 transition-all"
+            ></div>
+            <div class="flex items-center gap-4 mb-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center"
+              >
+                <i data-lucide="monitor" class="w-6 h-6 text-slate-300"></i>
+              </div>
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-slate-500"
+                >System</span
+              >
+            </div>
+            <h3 class="text-2xl font-bold text-white">
+              {{ model.os.full_name if model.os else 'Unknown' }}
+            </h3>
+            <p class="text-sm text-slate-400 mt-1">Operating System</p>
+          </div>
+
+          <!-- Nginx Info -->
+          <div
+            class="card glass p-6 rounded-[2rem] glass-hover transition-all relative overflow-hidden group"
+          >
+            <div
+              class="absolute -right-4 -top-4 w-24 h-24 bg-success/10 rounded-full blur-3xl group-hover:bg-success/20 transition-all"
+            ></div>
+            <div class="flex items-center gap-4 mb-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center"
+              >
+                <i data-lucide="globe" class="w-6 h-6 text-slate-300"></i>
+              </div>
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-slate-500"
+                >Nginx</span
+              >
+            </div>
+            <h3 class="text-2xl font-bold text-white">
+              {{ model.nginx.version if model.nginx else 'Not Found' }}
+            </h3>
+            <div class="flex items-center gap-2 mt-1">
+               <span class="text-sm text-slate-400">Web Server</span>
+               <span class="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] font-bold uppercase tracking-widest">
+                {{ model.nginx.mode if model.nginx else 'unknown' }}
+               </span>
+               {% if model.nginx and model.nginx.container_id %}
+               <span class="text-[9px] font-mono text-slate-500">
+                ({{ model.nginx.container_id[:12] }})
+               </span>
+               {% endif %}
+            </div>
+          </div>
+
+          <!-- PHP Info -->
+          <div
+            class="card glass p-6 rounded-[2rem] glass-hover transition-all relative overflow-hidden group"
+          >
+            <div
+              class="absolute -right-4 -top-4 w-24 h-24 bg-accent/10 rounded-full blur-3xl group-hover:bg-accent/20 transition-all"
+            ></div>
+            <div class="flex items-center gap-4 mb-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center"
+              >
+                <i data-lucide="terminal" class="w-6 h-6 text-slate-300"></i>
+              </div>
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-slate-500"
+                >PHP</span
+              >
+            </div>
+            <h3 class="text-2xl font-bold text-white">
+              {{ model.php.versions|join(', ') if model.php else 'Not found' }}
+            </h3>
+            <p class="text-sm text-slate-400 mt-1">Active Runtimes</p>
+          </div>
+
+          <!-- Findings Stats -->
+          <div
+            class="card glass p-6 rounded-[2rem] glass-hover transition-all relative overflow-hidden group"
+          >
+            <div
+              class="absolute -right-4 -top-4 w-24 h-24 bg-critical/10 rounded-full blur-3xl group-hover:bg-critical/20 transition-all"
+            ></div>
+            <div class="flex items-center gap-4 mb-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center"
+              >
+                <i
+                  data-lucide="alert-circle"
+                  class="w-6 h-6 text-slate-300"
+                ></i>
+              </div>
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-slate-500"
+                >Summary</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl font-bold text-critical" id="crit-count"
+                >0</span
+              >
+              <span class="text-slate-500">/</span>
+              <span class="text-2xl font-bold text-warning" id="warn-count"
+                >0</span
+              >
+              <span class="text-slate-500">/</span>
+              <span class="text-2xl font-bold text-info" id="info-count"
+                >0</span
+              >
+            </div>
+            <p
+              class="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter"
+            >
+              Crit / Warn / Info
+            </p>
+          </div>
+        </div>
+
+        <!-- Charts & Score Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          <!-- Health Score Chart -->
+          <div
+            class="lg:col-span-1 glass p-8 rounded-[2.5rem] flex flex-col items-center justify-center space-y-6"
+          >
+            <h4
+              class="heading-font text-xl font-bold text-white opacity-80 uppercase tracking-widest text-[11px]"
+            >
+              Server Health Index
+            </h4>
+            <div class="relative w-full aspect-square max-w-[200px]">
+              <canvas id="healthChart"></canvas>
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+              >
+                <span
+                  id="scoreValue"
+                  class="text-5xl font-black heading-font text-white"
+                  >0</span
+                >
+                <span
+                  class="text-[10px] text-slate-500 font-bold tracking-widest uppercase"
+                  >Score</span
+                >
+              </div>
+            </div>
+            <div
+              id="healthMessage"
+              class="px-6 py-2 rounded-2xl text-sm font-bold tracking-wide"
+            ></div>
+          </div>
+
+          <!-- Finding Categories -->
+          <div class="lg:col-span-2 glass p-8 rounded-[2.5rem]">
+            <div class="flex items-center justify-between mb-8">
+              <div>
+                <h4 class="heading-font text-xl font-bold text-white mb-1">
+                  Issue Distribution
+                </h4>
+                <p class="text-xs text-slate-400">
+                  Analysis of findings by severity level
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-critical"></span>
+                  <span
+                    class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"
+                    >Critical</span
+                  >
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-warning"></span>
+                  <span
+                    class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"
+                    >Warning</span
+                  >
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-info"></span>
+                  <span
+                    class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"
+                    >Info</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="h-64">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Architecture Summary -->
+        <section id="architecture" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="workflow" class="text-accent w-8 h-8"></i>
+              Architecture Summary
+            </h3>
+            <span class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Reconstructed
+            </span>
+          </div>
+
+          <div class="glass p-6 rounded-[2rem] border-white/5">
+            <p class="text-sm text-slate-400 mb-4">How traffic and services are currently arranged.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {% for line in architecture_summary %}
+              <div class="p-3 rounded-xl bg-white/5 border border-white/5 text-sm text-slate-300">
+                {{ line }}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <!-- Effective Traffic Flow -->
+        <section id="flow-map" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="git-branch" class="text-accent w-8 h-8"></i>
+              Effective Traffic Flow
+            </h3>
+            <span class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Domain &rarr; Path &rarr; Upstream
+            </span>
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5 mb-6">
+            {% if traffic_flow %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Domain</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Path</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Type</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Target</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Container</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest text-center">Confidence</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest text-center">Public Bind</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for route in traffic_flow %}
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 text-slate-200 font-medium">{{ route.domain }}</td>
+                    <td class="px-6 py-4 font-mono text-accent">{{ route.path }}</td>
+                    <td class="px-6 py-4 uppercase tracking-wider text-[10px] text-slate-400">{{ route.route_type }}</td>
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ route.resolved_target }}</td>
+                    <td class="px-6 py-4 text-slate-300">
+                      {% if route.containers %}
+                        {{ route.containers|join(', ') }}
+                      {% else %}
+                        <span class="text-slate-600">unmapped</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {% if route.confidence_label == 'HIGH' %}bg-success/20 text-success{% elif route.confidence_label == 'MEDIUM' %}bg-warning/20 text-warning{% elif route.confidence_label == 'LOW' %}bg-warning/10 text-warning{% else %}bg-critical/20 text-critical{% endif %}">
+                        {{ route.confidence_label }}
+                      </span>
+                      {% if route.unknown %}
+                      <p class="text-[10px] text-critical mt-1">unknown edge</p>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if route.public %}bg-warning/20 text-warning{% else %}bg-success/20 text-success{% endif %}">
+                        {{ "yes" if route.public else "no" }}
+                      </span>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-10 text-center text-slate-500">No proxy/static flow edges reconstructed.</div>
+            {% endif %}
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5 mb-6">
+            <div class="px-6 py-4 border-b border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">Effective Routing Winner (Canonical Probes)</h4>
+            </div>
+            {% if routing_winners %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Host</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Probe</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Winning Location</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Target</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Source</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest text-center">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for row in routing_winners %}
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 text-slate-200">{{ row.host }}</td>
+                    <td class="px-6 py-4 font-mono text-accent">{{ row.probe }}</td>
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ row.location_path }}</td>
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ row.target }}</td>
+                    <td class="px-6 py-4 font-mono text-slate-500">{{ row.winner_file }}:{{ row.winner_line }}</td>
+                    <td class="px-6 py-4 text-center">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {% if row.confidence == 'HIGH' %}bg-success/20 text-success{% else %}bg-critical/20 text-critical{% endif %}">
+                        {{ row.confidence }}
+                      </span>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-500">No host probe winners could be simulated.</div>
+            {% endif %}
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5 mb-6">
+            <div class="px-6 py-4 border-b border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">Header Inheritance Graph</h4>
+            </div>
+            {% if header_graph %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Domain</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Location</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest text-center">Mode</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest text-center">Parent/Child</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Missing In Child</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for node in header_graph %}
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 text-slate-200">{{ node.domain }}</td>
+                    <td class="px-6 py-4 font-mono text-accent">{{ node.path }}</td>
+                    <td class="px-6 py-4 text-center">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {% if node.mode == 'override' %}bg-warning/20 text-warning{% elif node.mode == 'inherit' %}bg-success/20 text-success{% else %}bg-critical/20 text-critical{% endif %}">
+                        {{ node.mode }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-center text-slate-300">{{ node.parent_count }} / {{ node.child_count }}</td>
+                    <td class="px-6 py-4 text-slate-400">
+                      {% if node.missing %}
+                        {{ node.missing|join(', ') }}
+                      {% else %}
+                        <span class="text-slate-600">none</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-500">No header relationship data available.</div>
+            {% endif %}
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5">
+            <div class="px-6 py-4 border-b border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">Public Exposure Map</h4>
+            </div>
+            {% if exposure_map %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Container</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Binding</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Behind Nginx?</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Firewall</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Class</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Reason</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for exp in exposure_map %}
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 text-slate-200">{{ exp.container }}</td>
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ exp.host_ip }}:{{ exp.host_port }} &rarr; {{ exp.container_port }}/{{ exp.proto }}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if exp.proxied_display == 'yes' %}bg-success/20 text-success{% elif exp.proxied_display == 'N/A (ingress)' %}bg-info/20 text-info{% else %}bg-critical/20 text-critical{% endif %}">
+                        {{ exp.proxied_display }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if exp.firewall_posture == 'BLOCKED' %}bg-success/20 text-success{% elif exp.firewall_posture == 'OPEN' %}bg-critical/20 text-critical{% else %}bg-warning/20 text-warning{% endif %}">
+                        {{ exp.firewall_posture }}
+                      </span>
+                      <div class="text-[10px] text-slate-500 mt-1">{{ exp.firewall_evidence }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {% if exp.bucket == 'real_risk' %}bg-critical/20 text-critical{% elif exp.bucket == 'cleanup' %}bg-warning/20 text-warning{% else %}bg-info/20 text-info{% endif %}">
+                        {{ exp.bucket.replace('_', ' ') }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-400">{{ exp.reason }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-10 text-center text-slate-500">No public Docker port bindings detected.</div>
+            {% endif %}
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5 mt-6">
+            <div class="px-6 py-4 border-b border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">TLS Status</h4>
+            </div>
+            {% if tls_status %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Cert Path</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Issuer</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Expires</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Days</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Renewal Owner</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">SANs</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for cert in tls_status %}
+                  <tr class="hover:bg-white/[0.02] {% if cert.owner_unknown_alert %}bg-critical/5{% endif %}">
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ cert.path }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ cert.issuer }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ cert.expires_at }}</td>
+                    <td class="px-6 py-4">
+                      {% if cert.days_remaining is not none %}
+                      <span class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide 
+                        {% if cert.expiry_color == 'red' %}bg-red-500/20 text-red-400 border border-red-500/30{% elif cert.expiry_color == 'orange' %}bg-orange-500/20 text-orange-400 border border-orange-500/30{% elif cert.expiry_color == 'yellow' %}bg-yellow-500/20 text-yellow-400 border border-yellow-500/30{% else %}bg-green-500/20 text-green-400 border border-green-500/30{% endif %}">
+                        {% if cert.days_remaining == 0 %}EXPIRED{% else %}{{ cert.days_remaining }} days{% endif %}
+                      </span>
+                      {% if cert.expiry_urgent %}
+                      <div class="text-[10px] text-critical mt-1">
+                        {% if cert.days_remaining <= 7 %}⚠️ Expires within a week!{% else %}⚠️ Expires soon{% endif %}
+                      </div>
+                      {% endif %}
+                      {% else %}
+                      <span class="px-2 py-0.5 rounded text-[10px] bg-slate-700 text-slate-400">n/a</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {% if cert.renewal_owner == 'certbot' %}bg-success/20 text-success{% elif cert.renewal_owner == 'container-managed' %}bg-info/20 text-info{% else %}bg-warning/20 text-warning{% endif %}">
+                        {{ cert.renewal_owner }}
+                      </span>
+                      {% if cert.owner_unknown_alert %}
+                      <div class="text-[10px] text-critical mt-1">expires soon and owner unknown</div>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-400">
+                      {% if cert.sans %}{{ cert.sans|join(', ') }}{% else %}none{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-10 text-center text-slate-500">No TLS certificate metadata available.</div>
+            {% endif %}
+          </div>
+
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5 mt-6">
+            <div class="px-6 py-4 border-b border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">Active Upstream Probes</h4>
+            </div>
+            {% if upstream_probe_rows %}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Target</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Protocol</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Status</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Scope</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Latency (ms)</th>
+                    <th class="px-6 py-4 text-slate-500 uppercase tracking-widest">Detail</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% for probe in upstream_probe_rows %}
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 font-mono text-slate-300">{{ probe.target }}</td>
+                    <td class="px-6 py-4 uppercase tracking-wider text-[10px] text-slate-400">{{ probe.protocol }}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if probe.status == 'OPEN' %}bg-success/20 text-success{% elif probe.status == 'BLOCKED' %}bg-critical/20 text-critical{% else %}bg-warning/20 text-warning{% endif %}">
+                        {{ probe.status }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">{{ probe.scope }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ probe.latency_ms if probe.latency_ms is not none else "n/a" }}</td>
+                    <td class="px-6 py-4 text-slate-400">
+                      {{ probe.detail }}
+                      <div class="text-[10px] text-slate-500 mt-1">
+                        tcp={{ "ok" if probe.tcp_ok else "fail" if probe.tcp_ok is not none else "n/a" }}
+                        http={{ probe.http_code if probe.http_code is not none else "n/a" }}
+                        ws={{ probe.ws_status if probe.ws_status else (probe.ws_code if probe.ws_code is not none else "n/a") }}
+                        {% if probe.ws_detail %}<br/>{{ probe.ws_detail }}{% endif %}
+                        {% if probe.ws_path %}<br/>path={{ probe.ws_path }}{% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-500">No active probe results available.</div>
+            {% endif %}
+          </div>
+        </section>
+
+        <!-- Risk Split -->
+        <section id="risk-split" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="shield-alert" class="text-accent w-8 h-8"></i>
+              Real Risk vs Cleanup
+            </h3>
+            <span class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Noise Filter
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 {% if trend.topology_diff %}lg:grid-cols-4{% else %}lg:grid-cols-3{% endif %} gap-6 mb-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Real Risk</p>
+              <p class="text-3xl font-black text-critical">{{ risk_buckets.real_risk|length }}</p>
+              <p class="text-xs text-slate-500 mt-1">Exploitability or outage likelihood is high.</p>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Cleanup</p>
+              <p class="text-3xl font-black text-warning">{{ risk_buckets.cleanup|length }}</p>
+              <p class="text-xs text-slate-500 mt-1">Important hardening or routing hygiene.</p>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Info</p>
+              <p class="text-3xl font-black text-info">{{ risk_buckets.info|length }}</p>
+              <p class="text-xs text-slate-500 mt-1">Advisory, low immediate production risk.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">5-minute fixes</h4>
+              <div class="space-y-2">
+                {% for item in fix_tracks.five_minute %}
+                <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                  <p class="font-mono text-[10px] text-slate-500">{{ item.id }}</p>
+                  <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                </div>
+                {% endfor %}
+                {% if not fix_tracks.five_minute %}<p class="text-xs text-slate-500">none</p>{% endif %}
+              </div>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Security fixes</h4>
+              <div class="space-y-2">
+                {% for item in fix_tracks.security %}
+                <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                  <p class="font-mono text-[10px] text-slate-500">{{ item.id }}</p>
+                  <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                </div>
+                {% endfor %}
+                {% if not fix_tracks.security %}<p class="text-xs text-slate-500">none</p>{% endif %}
+              </div>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Cleanup fixes</h4>
+              <div class="space-y-2">
+                {% for item in fix_tracks.cleanup %}
+                <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                  <p class="font-mono text-[10px] text-slate-500">{{ item.id }}</p>
+                  <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                </div>
+                {% endfor %}
+                {% if not fix_tracks.cleanup %}<p class="text-xs text-slate-500">none</p>{% endif %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Action Plan Section -->
+        <section id="action-plan" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="list-checks" class="text-accent w-8 h-8"></i>
+              Prioritized Action Plan
+            </h3>
+            <span
+              class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >
+              Top {{ action_plan|length }} Actions
+            </span>
+          </div>
+
+          {% if action_plan %}
+          <div class="space-y-4">
+            {% for item in action_plan %}
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 rounded-lg bg-white/10 text-slate-300 text-[10px] font-bold uppercase tracking-widest">#{{ item.rank }}</span>
+                    <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest {% if item.severity == 'CRITICAL' %}bg-critical/20 text-critical{% elif item.severity == 'WARNING' %}bg-warning/20 text-warning{% else %}bg-info/20 text-info{% endif %}">
+                      {{ item.severity }}
+                    </span>
+                    <span class="font-mono text-[10px] text-slate-500">{{ item.id }}</span>
+                  </div>
+                  <p class="text-base font-semibold text-white mb-1">{{ item.title }}</p>
+                  <p class="text-xs text-slate-400">{{ item.impact }}</p>
+                </div>
+                <div class="w-full lg:w-[48%]">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Command</p>
+                  <pre class="p-3 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap"><code>{{ item.command }}</code></pre>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="glass p-10 rounded-[2rem] border-white/5 text-center text-slate-400">
+            No actionable findings detected.
+          </div>
+          {% endif %}
+
+          {% if patch_snippets.docker_compose or patch_snippets.nginx_include %}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {% if patch_snippets.docker_compose %}
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">docker-compose patch snippet</h4>
+              <pre class="p-3 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap"><code>{{ patch_snippets.docker_compose }}</code></pre>
+            </div>
+            {% endif %}
+            {% if patch_snippets.nginx_include %}
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Nginx include snippet</h4>
+              <pre class="p-3 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap"><code>{{ patch_snippets.nginx_include }}</code></pre>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- Trend Section -->
+        <section id="trend" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="trending-up" class="text-accent w-8 h-8"></i>
+              Scan Trend
+            </h3>
+            <span class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Diff vs Previous
+            </span>
+          </div>
+
+          {% if trend.has_previous %}
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Score</p>
+              <p class="text-2xl font-bold text-white">{{ trend.current_score }} <span class="text-sm text-slate-500">now</span></p>
+              <p class="text-sm mt-1 {% if trend.score_delta is not none and trend.score_delta >= 0 %}text-success{% else %}text-critical{% endif %}">
+                {% if trend.score_delta is none %}n/a{% elif trend.score_delta >= 0 %}+{{ trend.score_delta }}{% else %}{{ trend.score_delta }}{% endif %}
+                vs {{ trend.previous_score }}
+              </p>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">New Findings</p>
+              <p class="text-2xl font-bold text-warning">{{ trend.new_findings|length }}</p>
+              <p class="text-xs text-slate-500 mt-1">Since {{ trend.previous_timestamp }}</p>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Resolved Findings</p>
+              <p class="text-2xl font-bold text-success">{{ trend.resolved_findings|length }}</p>
+              <p class="text-xs text-slate-500 mt-1">Current scan {{ trend.current_timestamp }}</p>
+            </div>
+            {% if trend.topology_diff %}
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Topology</p>
+              <p class="text-2xl font-bold {% if trend.topology_diff.signature_changed %}text-warning{% else %}text-success{% endif %}">
+                {{ "Changed" if trend.topology_diff.signature_changed else "Stable" }}
+              </p>
+              <p class="text-xs text-slate-500 mt-1">
+                routes +{{ trend.topology_diff.added_routes|length }}/-{{ trend.topology_diff.removed_routes|length }},
+                binds +{{ trend.topology_diff.added_bindings|length }}/-{{ trend.topology_diff.removed_bindings|length }}
+              </p>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">New</p>
+              <div class="space-y-2 max-h-56 overflow-y-auto">
+                {% for item in trend.new_findings %}
+                <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                  <p class="font-mono text-[10px] text-warning">{{ item.id }}</p>
+                  <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                </div>
+                {% endfor %}
+                {% if not trend.new_findings %}
+                <p class="text-xs text-slate-500">No newly introduced findings.</p>
+                {% endif %}
+              </div>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Resolved</p>
+              <div class="space-y-2 max-h-56 overflow-y-auto">
+                {% for item in trend.resolved_findings %}
+                <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                  <p class="font-mono text-[10px] text-success">{{ item.id }}</p>
+                  <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                </div>
+                {% endfor %}
+                {% if not trend.resolved_findings %}
+                <p class="text-xs text-slate-500">No resolved findings from last scan.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% if trend.topology_diff %}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Topology Added</p>
+              <div class="space-y-2 max-h-44 overflow-y-auto">
+                {% for item in trend.topology_diff.added_routes[:8] %}
+                <div class="p-2 rounded-lg bg-black/20 border border-white/5 font-mono text-[10px] text-warning">{{ item }}</div>
+                {% endfor %}
+                {% for item in trend.topology_diff.added_bindings[:8] %}
+                <div class="p-2 rounded-lg bg-black/20 border border-white/5 font-mono text-[10px] text-warning">{{ item }}</div>
+                {% endfor %}
+                {% if not trend.topology_diff.added_routes and not trend.topology_diff.added_bindings %}
+                <p class="text-xs text-slate-500">No topology additions.</p>
+                {% endif %}
+              </div>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Topology Removed</p>
+              <div class="space-y-2 max-h-44 overflow-y-auto">
+                {% for item in trend.topology_diff.removed_routes[:8] %}
+                <div class="p-2 rounded-lg bg-black/20 border border-white/5 font-mono text-[10px] text-success">{{ item }}</div>
+                {% endfor %}
+                {% for item in trend.topology_diff.removed_bindings[:8] %}
+                <div class="p-2 rounded-lg bg-black/20 border border-white/5 font-mono text-[10px] text-success">{{ item }}</div>
+                {% endfor %}
+                {% if not trend.topology_diff.removed_routes and not trend.topology_diff.removed_bindings %}
+                <p class="text-xs text-slate-500">No topology removals.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="glass p-10 rounded-[2rem] border-white/5 text-center text-slate-400">
+            No previous scan baseline found. Run another diagnose to see trend diffs.
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- Runtime Topology Section -->
+        {% if model.runtime %}
+        <section id="runtime" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="activity" class="text-accent w-8 h-8"></i>
+              Runtime Topology
+            </h3>
+            <span
+              class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >
+              Live State
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Systemd Services -->
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <div class="flex items-center gap-4 mb-6">
+                <div
+                  class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center"
+                >
+                  <i data-lucide="settings" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-lg">Systemd Services</h4>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">
+                    {{ model.runtime.systemd_services|length }} Monitored
+                  </p>
+                </div>
+              </div>
+              <div class="mb-3 flex items-center justify-between">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500">
+                  Showing failed/inactive by default
+                </p>
+                <button
+                  id="toggle-systemd-noise"
+                  type="button"
+                  onclick="toggleSystemdNoise(this)"
+                  class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-white/10 text-slate-300 hover:bg-white/20 transition-all"
+                >
+                  Show All
+                </button>
+              </div>
+              <div class="space-y-3 max-h-60 overflow-y-auto scrollbar-hide">
+                {% for svc in model.runtime.systemd_services %}
+                {% set noisy = svc.state == 'active' and svc.substate in ['running', 'exited'] %}
+                <div
+                  class="systemd-row {% if noisy %}systemd-noise{% endif %} flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5"
+                  {% if noisy %}style="display:none"{% endif %}
+                >
+                  <div>
+                    <p class="text-sm font-medium">{{ svc.name }}</p>
+                    <p class="text-[10px] text-slate-500">{{ svc.substate }}</p>
+                  </div>
+                  <div class="text-right">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide {% if svc.state == 'active' %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}"
+                    >
+                      {{ svc.state }}
+                    </span>
+                    {% if svc.restart_count > 0 %}
+                    <p class="text-[10px] text-red-400 mt-1">
+                      {{ svc.restart_count }} restarts
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+                <div id="systemd-clean-note" class="text-center py-3 opacity-60 text-xs text-slate-400" style="display:none">
+                  No failed/inactive services.
+                </div>
+              </div>
+            </div>
+
+            <!-- Redis Instances -->
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <div class="flex items-center gap-4 mb-6">
+                <div
+                  class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center"
+                >
+                  <i data-lucide="database" class="w-5 h-5 text-red-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-lg">Redis Instances</h4>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">
+                    {{ model.runtime.redis_instances|length }} Detected
+                  </p>
+                </div>
+              </div>
+              {% if model.runtime.redis_instances %}
+              <div class="space-y-3">
+                {% for redis in model.runtime.redis_instances %}
+                <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="font-mono text-sm text-slate-300"
+                      >Port {{ redis.port }}</span
+                    >
+                    <span
+                      class="text-[10px] font-bold px-2 py-1 rounded bg-slate-800 text-slate-400"
+                    >
+                      {{ redis.state.value }}
+                    </span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span
+                      class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider {% if redis.auth_enabled %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}"
+                    >
+                      Auth: {{ 'ON' if redis.auth_enabled else 'OFF' }}
+                    </span>
+                    <span
+                      class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider bg-slate-800 text-slate-400"
+                    >
+                      {{ redis.bind_addresses|join(', ') }}
+                    </span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="text-center py-8 opacity-50">
+                <i data-lucide="database" class="w-8 h-8 mx-auto mb-2"></i>
+                <p class="text-sm">No Redis instances found</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Background Workers -->
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <div class="flex items-center gap-4 mb-6">
+                <div
+                  class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center"
+                >
+                  <i data-lucide="cpu" class="w-5 h-5 text-purple-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-lg">Workers</h4>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">
+                    Scheduler:
+                    <span
+                      class="{{ 'text-green-400' if model.runtime.scheduler_detected else 'text-red-400' }}"
+                    >
+                      {{ model.runtime.scheduler_type or 'MISSING' }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div class="space-y-3 max-h-60 overflow-y-auto scrollbar-hide">
+                {% for worker in model.runtime.worker_processes %}
+                <div
+                  class="p-3 rounded-xl bg-white/5 border border-white/5 relative group"
+                >
+                  <div class="flex justify-between items-start mb-1">
+                    <span class="text-xs font-bold text-slate-300"
+                      >{{ worker.queue_type|upper }}</span
+                    >
+                    <span class="font-mono text-[10px] text-slate-500"
+                      >PID {{ worker.pid }}</span
+                    >
+                  </div>
+                  <p
+                    class="font-mono text-[10px] text-slate-400 truncate"
+                    title="{{ worker.cmdline }}"
+                  >
+                    {{ worker.cmdline }}
+                  </p>
+                  <div
+                    class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none"
+                  ></div>
+                </div>
+                {% endfor %} {% if not model.runtime.worker_processes %}
+                <div class="text-center py-8 opacity-50">
+                  <i data-lucide="coffee" class="w-8 h-8 mx-auto mb-2"></i>
+                  <p class="text-sm">No workers active</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- Infrastructure Section -->
+        <section id="infrastructure" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="shield" class="text-accent w-8 h-8"></i>
+              Infrastructure Snapshot
+            </h3>
+            <span
+              class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >
+              Full Context
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Scan Metadata
+              </h4>
+              <div class="space-y-2 text-sm">
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Timestamp:</span>
+                  {{ model.scan_timestamp or 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Doctor Version:</span>
+                  {{ model.doctor_version or 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Commit:</span>
+                  <span class="font-mono text-xs">{{ model.commit_hash or 'unknown' }}</span>
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Nginx Mode:</span>
+                  {{ model.nginx.mode if model.nginx else 'unknown' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Service Posture
+              </h4>
+              <div class="space-y-2 text-sm">
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Nginx:</span>
+                  {{ model.nginx_status.state.value if model.nginx_status and model.nginx_status.state else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Docker:</span>
+                  {{ model.services.docker.state.value if model.services and model.services.docker else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">MySQL:</span>
+                  {{ model.services.mysql.state.value if model.services and model.services.mysql else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Node:</span>
+                  {{ model.services.node.state.value if model.services and model.services.node else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Firewall:</span>
+                  {{ model.services.firewall if model.services else 'unknown' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Security Posture
+              </h4>
+              <div class="space-y-2 text-sm">
+                <p class="text-slate-300">
+                  <span class="text-slate-500">PermitRootLogin:</span>
+                  {{ model.security_baseline.ssh_permit_root_login or 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">PasswordAuth:</span>
+                  {{ model.security_baseline.ssh_password_authentication or 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Pending Updates:</span>
+                  {{ model.security_baseline.pending_updates_total if model.security_baseline.pending_updates_total is not none else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Security Updates:</span>
+                  {{ model.security_baseline.pending_security_updates if model.security_baseline.pending_security_updates is not none else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Reboot Required:</span>
+                  {{ 'yes' if model.security_baseline.reboot_required else 'no' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resource Metrics Dashboard -->
+          {% if resource_metrics.has_data %}
+          <div class="glass p-6 rounded-[2rem] border-white/5 mb-6">
+            <div class="flex items-center justify-between mb-6">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400">
+                <i data-lucide="gauge" class="w-4 h-4 inline mr-2"></i>
+                Resource Metrics
+              </h4>
+              <span class="text-xs text-slate-500">Live telemetry from scan</span>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- CPU Usage -->
+              {% if resource_metrics.cpu %}
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                      <i data-lucide="cpu" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-slate-300">CPU Usage</p>
+                      <p class="text-[10px] text-slate-500">{{ resource_metrics.cpu.cores }} cores</p>
+                    </div>
+                  </div>
+                  <span class="text-lg font-black {% if resource_metrics.cpu.status == 'critical' %}text-red-400{% elif resource_metrics.cpu.status == 'warning' %}text-yellow-400{% else %}text-green-400{% endif %}">
+                    {{ resource_metrics.cpu.usage_percent }}%
+                  </span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+                  <div class="h-full rounded-full transition-all duration-500 {% if resource_metrics.cpu.status == 'critical' %}bg-red-500{% elif resource_metrics.cpu.status == 'warning' %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                       style="width: {{ resource_metrics.cpu.usage_percent }}%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500">
+                  <span>Load: {{ resource_metrics.cpu.load_1 }}</span>
+                  <span>{{ resource_metrics.cpu.load_5 }} / {{ resource_metrics.cpu.load_15 }}</span>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Memory Usage -->
+              {% if resource_metrics.memory %}
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <i data-lucide="hard-drive" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-slate-300">Memory</p>
+                      <p class="text-[10px] text-slate-500">{{ resource_metrics.memory.total_gb }} GB total</p>
+                    </div>
+                  </div>
+                  <span class="text-lg font-black {% if resource_metrics.memory.status == 'critical' %}text-red-400{% elif resource_metrics.memory.status == 'warning' %}text-yellow-400{% else %}text-green-400{% endif %}">
+                    {{ resource_metrics.memory.used_percent }}%
+                  </span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+                  <div class="h-full rounded-full transition-all duration-500 {% if resource_metrics.memory.status == 'critical' %}bg-red-500{% elif resource_metrics.memory.status == 'warning' %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                       style="width: {{ resource_metrics.memory.used_percent }}%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500">
+                  <span>{{ resource_metrics.memory.used_gb }} GB used</span>
+                  <span>{{ resource_metrics.memory.available_gb }} GB free</span>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Disk Usage Summary -->
+              {% if resource_metrics.disks %}
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                      <i data-lucide="disc" class="w-4 h-4 text-orange-400"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-slate-300">Disk Usage</p>
+                      <p class="text-[10px] text-slate-500">{{ resource_metrics.disks|length }} mounts</p>
+                    </div>
+                  </div>
+                  {% set max_disk = resource_metrics.disks|sort(attribute='used_percent', reverse=true)|first %}
+                  <span class="text-lg font-black {% if max_disk.status == 'critical' %}text-red-400{% elif max_disk.status == 'warning' %}text-yellow-400{% else %}text-green-400{% endif %}">
+                    {{ max_disk.used_percent }}%
+                  </span>
+                </div>
+                <div class="space-y-1.5 max-h-20 overflow-y-auto">
+                  {% for disk in resource_metrics.disks[:3] %}
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-mono truncate" style="max-width: 100px;">{{ disk.mount }}</span>
+                    <div class="flex items-center gap-2">
+                      <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full {% if disk.status == 'critical' %}bg-red-500{% elif disk.status == 'warning' %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                             style="width: {{ disk.used_percent }}%"></div>
+                      </div>
+                      <span class="text-slate-500 w-8 text-right">{{ disk.used_percent }}%</span>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Host Telemetry
+              </h4>
+              <div class="space-y-2 text-sm">
+                <p class="text-slate-300">
+                  <span class="text-slate-500">CPU Cores:</span>
+                  {{ model.telemetry.cpu_cores if model.telemetry.cpu_cores is not none else 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Load (1/5/15):</span>
+                  {{ "%.2f"|format(model.telemetry.load_1) if model.telemetry.load_1 is not none else 'n/a' }}
+                  /
+                  {{ "%.2f"|format(model.telemetry.load_5) if model.telemetry.load_5 is not none else 'n/a' }}
+                  /
+                  {{ "%.2f"|format(model.telemetry.load_15) if model.telemetry.load_15 is not none else 'n/a' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Memory (MB):</span>
+                  {{ model.telemetry.mem_available_mb if model.telemetry.mem_available_mb is not none else 'n/a' }}
+                  available /
+                  {{ model.telemetry.mem_total_mb if model.telemetry.mem_total_mb is not none else 'n/a' }}
+                  total
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Swap (MB):</span>
+                  {{ model.telemetry.swap_free_mb if model.telemetry.swap_free_mb is not none else 'n/a' }}
+                  free /
+                  {{ model.telemetry.swap_total_mb if model.telemetry.swap_total_mb is not none else 'n/a' }}
+                  total
+                </p>
+              </div>
+              {% if disk_rows %}
+              <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="text-slate-500">
+                      <th class="py-2 pr-3">Mount</th>
+                      <th class="py-2 pr-3">Used %</th>
+                      <th class="py-2 pr-3">Used GB</th>
+                      <th class="py-2 pr-3">Inode %</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    {% for disk in disk_rows %}
+                    <tr>
+                      <td class="py-2 pr-3 font-mono text-slate-300">{{ disk.mount }}</td>
+                      <td class="py-2 pr-3 text-slate-300">{{ "%.1f"|format(disk.used_percent) }}</td>
+                      <td class="py-2 pr-3 text-slate-300">
+                        {{ "%.2f"|format(disk.used_gb) }}/{{ "%.2f"|format(disk.total_gb) }}
+                      </td>
+                      <td class="py-2 pr-3 text-slate-300">
+                        {{ "%.1f"|format(disk.inode_used_percent) if disk.inode_used_percent is not none else 'n/a' }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="glass p-6 rounded-[2rem] border-white/5">
+              <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Vulnerability & Exposure
+              </h4>
+              <div class="space-y-2 text-sm mb-4">
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Provider:</span>
+                  {{ model.vulnerability.provider or 'unknown' }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">CVE IDs:</span>
+                  {{ model.vulnerability.cve_ids|length }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Advisories:</span>
+                  {{ model.vulnerability.advisory_ids|length }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Affected Packages:</span>
+                  {{ model.vulnerability.affected_packages|length }}
+                </p>
+                <p class="text-slate-300">
+                  <span class="text-slate-500">Network Endpoints:</span>
+                  {{ network_endpoints|length }}
+                  (public: {{ network_endpoints|selectattr('public_exposed')|list|length }})
+                </p>
+              </div>
+              {% if network_endpoints %}
+              <div class="overflow-x-auto max-h-64">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="text-slate-500">
+                      <th class="py-2 pr-3">Proto</th>
+                      <th class="py-2 pr-3">Address</th>
+                      <th class="py-2 pr-3">Port</th>
+                      <th class="py-2 pr-3">Service</th>
+                      <th class="py-2 pr-3">Program</th>
+                      <th class="py-2 pr-3">Public</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    {% for ep in network_endpoints %}
+                    <tr>
+                      <td class="py-2 pr-3 uppercase text-slate-300">{{ ep.protocol }}</td>
+                      <td class="py-2 pr-3 font-mono text-slate-300">{{ ep.address }}</td>
+                      <td class="py-2 pr-3 text-slate-300">{{ ep.port }}</td>
+                      <td class="py-2 pr-3 text-slate-300">{{ ep.service or 'unknown' }}</td>
+                      <td class="py-2 pr-3 text-slate-300">{{ ep.program or 'unknown' }}</td>
+                      <td class="py-2 pr-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if ep.public_exposed %}bg-critical/20 text-critical{% else %}bg-success/20 text-success{% endif %}">
+                          {{ 'yes' if ep.public_exposed else 'no' }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="glass p-6 rounded-[2rem] border-white/5">
+            <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+              Nginx Configuration Footprint
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm mb-4">
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <p class="text-slate-500 text-xs uppercase tracking-widest mb-1">Config Path</p>
+                <p class="font-mono text-xs text-slate-300 break-all">{{ model.nginx.config_path if model.nginx else 'unknown' }}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <p class="text-slate-500 text-xs uppercase tracking-widest mb-1">Server Blocks</p>
+                <p class="text-slate-200">{{ model.nginx.servers|length if model.nginx else 0 }}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <p class="text-slate-500 text-xs uppercase tracking-widest mb-1">Upstreams</p>
+                <p class="text-slate-200">{{ model.nginx.upstreams|length if model.nginx else 0 }}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                <p class="text-slate-500 text-xs uppercase tracking-widest mb-1">Includes</p>
+                <p class="text-slate-200">{{ model.nginx.includes|length if model.nginx else 0 }}</p>
+              </div>
+            </div>
+            {% if model.nginx %}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+              <div class="p-4 rounded-xl bg-black/20 border border-white/5">
+                <p class="text-slate-500 mb-2 uppercase tracking-widest">Included Files</p>
+                <div class="space-y-1 max-h-40 overflow-y-auto">
+                  {% for include in model.nginx.includes %}
+                  <p class="font-mono text-slate-400 break-all">{{ include }}</p>
+                  {% endfor %}
+                  {% if not model.nginx.includes %}
+                  <p class="text-slate-600">none</p>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="p-4 rounded-xl bg-black/20 border border-white/5">
+                <p class="text-slate-500 mb-2 uppercase tracking-widest">Skipped Includes</p>
+                <div class="space-y-1 max-h-40 overflow-y-auto">
+                  {% for include in model.nginx.skipped_includes %}
+                  <p class="font-mono text-slate-400 break-all">{{ include }}</p>
+                  {% endfor %}
+                  {% if not model.nginx.skipped_includes %}
+                  <p class="text-slate-600">none</p>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="p-4 rounded-xl bg-black/20 border border-white/5">
+                <p class="text-slate-500 mb-2 uppercase tracking-widest">Skipped Paths</p>
+                <div class="space-y-1 max-h-40 overflow-y-auto">
+                  {% for path in model.nginx.skipped_paths %}
+                  <p class="font-mono text-slate-400 break-all">{{ path }}</p>
+                  {% endfor %}
+                  {% if not model.nginx.skipped_paths %}
+                  <p class="text-slate-600">none</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="box" class="text-accent w-8 h-8"></i>
+              Active Server Environments
+            </h3>
+            <span
+              class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >
+              {{ model.projects|length }} Sites Detected
+            </span>
+          </div>
+
+          <div
+            class="glass overflow-hidden rounded-[2rem] border-white/5 shadow-2xl"
+          >
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-white/5">
+                    <th
+                      class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/5"
+                    >
+                      Path & Identifiers
+                    </th>
+                    <th
+                      class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/5"
+                    >
+                      Env Type
+                    </th>
+                    <th
+                      class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/5"
+                    >
+                      Confidence
+                    </th>
+                    <th
+                      class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/5"
+                    >
+                      PHP Socket Path
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  {% if model.projects %} {% for project in model.projects %}
+                  <tr class="hover:bg-white/[0.02] transition-colors group">
+                    <td class="px-6 py-6 font-mono text-sm">
+                      <div class="flex items-center gap-3">
+                        <div
+                          class="w-8 h-8 rounded-lg bg-surface flex items-center justify-center"
+                        >
+                          <i
+                            data-lucide="link"
+                            class="w-4 h-4 text-slate-500 group-hover:text-accent transition-colors"
+                          ></i>
+                        </div>
+                        <span
+                          class="text-slate-200 group-hover:text-white transition-colors"
+                          >{{ project.path }}</span
+                        >
+                      </div>
+                    </td>
+                    <td class="px-6 py-6">
+                      <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-info/10 text-info text-[10px] font-bold uppercase tracking-wider border border-info/20"
+                      >
+                        {{ project.type.value if project.type and
+                        project.type.value else project.type }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-6">
+                      <div class="flex flex-col gap-1.5">
+                        <div
+                          class="flex items-center justify-between text-[10px] font-bold mb-1"
+                        >
+                          <span class="text-slate-500 tracking-wider"
+                            >RELIABILITY</span
+                          >
+                          <span
+                            class="{% if project.confidence >= 0.9 %}text-success{% elif project.confidence >= 0.7 %}text-warning{% else %}text-critical{% endif %}"
+                          >
+                            {{ (project.confidence * 100)|round|int if
+                            project.confidence else 0 }}%
+                          </span>
+                        </div>
+                        <div
+                          class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden"
+                        >
+                          <div
+                            class="h-full progress-bar {% if project.confidence >= 0.9 %}bg-success{% elif project.confidence >= 0.7 %}bg-warning{% else %}bg-critical{% endif %}"
+                            data-width="{{ project.confidence or 0 }}"
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-6 font-mono text-[11px] text-slate-400">
+                      {{ project.php_socket or '<em class="text-slate-600"
+                        >No socket bound</em
+                      >'|safe }}
+                    </td>
+                  </tr>
+                  {% endfor %} {% else %}
+                  <tr>
+                    <td colspan="4" class="px-6 py-20 text-center">
+                      <div
+                        class="flex flex-col items-center justify-center opacity-40"
+                      >
+                        <i data-lucide="search-x" class="w-12 h-12 mb-4"></i>
+                        <p class="text-lg font-medium">
+                          No active projects found
+                        </p>
+                        <p class="text-sm">
+                          Scan Nginx configuration to discover hosts.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Findings Section -->
+        <section id="findings" class="mb-12 pt-8">
+          <div
+            class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8"
+          >
+            <div>
+              <h3
+                class="heading-font text-3xl font-bold flex items-center gap-3"
+              >
+                <i data-lucide="search" class="text-accent w-8 h-8"></i>
+                Diagnostic Findings
+              </h3>
+              <p class="text-slate-400 mt-1 text-sm">
+                Detailed root-cause analysis and actionable solutions.
+              </p>
+            </div>
+
+            <div
+              class="flex items-center gap-2 p-1.5 glass rounded-2xl overflow-hidden border-white/5"
+            >
+              <button
+                onclick="filterFindings('ALL', this)"
+                data-filter="ALL"
+                class="filter-btn active px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all bg-white/10 text-white"
+              >
+                All
+              </button>
+              <button
+                onclick="filterFindings('CRITICAL', this)"
+                data-filter="CRITICAL"
+                class="filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all"
+              >
+                Critical
+              </button>
+              <button
+                onclick="filterFindings('WARNING', this)"
+                data-filter="WARNING"
+                class="filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all"
+              >
+                Warning
+              </button>
+              <button
+                onclick="filterFindings('INFO', this)"
+                data-filter="INFO"
+                class="filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all"
+              >
+                Info
+              </button>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-slate-400">
+              <input id="toggle-hide-expected-route" type="checkbox" checked class="rounded border-white/20 bg-transparent" />
+              Hide expected precedence findings
+            </label>
+          </div>
+
+          {% if not display_findings %}
+          <div
+            class="glass p-16 rounded-[2.5rem] border-success/20 text-center relative overflow-hidden"
+          >
+            <div
+              class="absolute inset-0 bg-success/5 pointer-events-none"
+            ></div>
+            <div class="relative z-10">
+              <i
+                data-lucide="check-circle-2"
+                class="w-20 h-20 text-success mx-auto mb-6"
+              ></i>
+              <h4 class="heading-font text-4xl font-bold text-white mb-2">
+                System Healthy
+              </h4>
+              <p class="text-slate-400 text-lg">
+                No critical misconfigurations or security risks detected.
+              </p>
+            </div>
+          </div>
+          {% else %}
+          <div class="space-y-6">
+            {% for finding in display_findings %}
+            <div
+              class="finding-card glass rounded-[2.5rem] overflow-hidden border-white/5 hover:border-white/10 transition-all flex flex-col md:flex-row"
+              data-severity="{{ finding.severity.value|upper }}"
+              data-expected="{{ '1' if finding.id == 'ROUTE-GROUP' else '0' }}"
+            >
+              <!-- Sidebar status -->
+              <div
+                class="w-full md:w-3 bg-{{ finding.severity.value|lower }}"
+              ></div>
+
+              <div class="flex-1 p-8 md:p-10">
+                <div
+                  class="flex flex-wrap items-center justify-between gap-4 mb-6"
+                >
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="inline-flex px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-{{ finding.severity.value|lower }}/20 text-{{ finding.severity.value|lower }} border border-{{ finding.severity.value|lower }}/30"
+                    >
+                      {{ finding.severity.value }}
+                    </span>
+                    <span class="text-slate-500 font-mono text-xs"
+                      >{{ finding.id }}</span
+                    >
+                    {% if finding.derived_from %}
+                    <span
+                      class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5"
+                    >
+                      <i
+                        data-lucide="git-branch"
+                        class="w-3 h-3 text-slate-600"
+                      ></i>
+                      CHAINED TO {{ finding.derived_from }}
+                    </span>
+                    {% endif %}
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                      >Confidence</span
+                    >
+                    <span
+                      class="text-sm font-black text-white px-2 py-0.5 rounded-lg border border-white/5 bg-white/5"
+                      >{{ (finding.confidence * 100)|int }}%</span
+                    >
+                  </div>
+                </div>
+
+                <h4 class="heading-font text-2xl font-bold text-white mb-3">
+                  {{ finding.condition }}
+                </h4>
+                <p class="text-slate-400 text-lg mb-8 leading-relaxed">
+                  {{ finding.cause }}
+                </p>
+
+                <!-- Evidence and Solution Grid -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <!-- Evidence Column -->
+                  <div class="space-y-4">
+                    <div
+                      class="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest"
+                    >
+                      <i data-lucide="fingerprint" class="w-4 h-4"></i>
+                      Observation Evidence
+                    </div>
+                    <div class="space-y-3">
+                      {% for ev in finding.evidence %}
+                      <div
+                        class="p-4 rounded-2xl bg-black/30 border border-white/5"
+                      >
+                        <div class="flex items-center justify-between mb-2">
+                          <span
+                            class="font-mono text-[10px] text-accent font-bold"
+                            >{{ ev.source_file }}:{{ ev.line_number }}</span
+                          >
+                          <span
+                            class="text-[9px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-slate-500 uppercase tracking-widest"
+                            >{{ ev.command }}</span
+                          >
+                        </div>
+                        {% if ev.excerpt %}
+                        <pre
+                          class="text-[11px] font-mono text-slate-400 overflow-x-auto p-3 bg-black/20 rounded-xl mt-2 border-l-2 border-accent"
+                        ><code>{{ ev.excerpt }}</code></pre>
+                        {% endif %}
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <!-- Treatment Column -->
+                  <div class="space-y-4">
+                    <div
+                      class="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest"
+                    >
+                      <i
+                        data-lucide="shield-check"
+                        class="w-4 h-4 text-success"
+                      ></i>
+                      Healing Treatment
+                    </div>
+                    {% if finding.treatment %}
+                    <div
+                      class="p-6 rounded-[2rem] bg-success/5 border border-success/10 relative group"
+                    >
+                      <div
+                        class="absolute top-4 right-4 text-success/20 group-hover:text-success/40 transition-colors"
+                      >
+                        <i data-lucide="wrench" class="w-12 h-12"></i>
+                      </div>
+                      <p
+                        class="text-[10px] font-black text-success uppercase tracking-widest mb-3"
+                      >
+                        RECOMMENDED ACTION
+                      </p>
+                      <pre
+                        class="text-xs font-mono text-success-300 whitespace-pre-wrap break-words leading-relaxed"
+                      ><code>{{ finding.treatment }}</code></pre>
+                    </div>
+                    {% endif %} {% if finding.impact %}
+                    <div
+                      class="mt-6 p-6 rounded-[2rem] bg-critical/5 border border-critical/10"
+                    >
+                      <p
+                        class="text-[10px] font-black text-critical uppercase tracking-widest mb-3"
+                      >
+                        RISKS IF IGNORED
+                      </p>
+                      <ul class="space-y-2">
+                        {% for impact in finding.impact %}
+                        <li
+                          class="flex items-start gap-2.5 text-xs text-slate-400 leading-relaxed"
+                        >
+                          <div
+                            class="mt-1 w-1.5 h-1.5 rounded-full bg-critical border border-critical/30 shrink-0"
+                          ></div>
+                          {{ impact }}
+                        </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- WebSocket Inventory (Optional) -->
+        {% if ws_inventory %}
+        <section id="websocket" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="zap" class="text-accent w-8 h-8"></i>
+              WSS Proxy Inventory
+            </h3>
+          </div>
+          <div class="glass overflow-hidden rounded-[2rem] border-white/5">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="bg-white/5">
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                  >
+                    Service Domain
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                  >
+                    Path
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                  >
+                    Proxy Target
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-center"
+                  >
+                    Handshake
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-center"
+                  >
+                    Buffering
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-center"
+                  >
+                    Timeouts
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-center"
+                  >
+                    Risk
+                  </th>
+                  <th
+                    class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                  >
+                    Probe
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                {% for ws in ws_inventory %}
+                {% set ws_probe = ws_probe_lookup.get(ws.domain ~ '|' ~ ws.location.path) %}
+                <tr class="hover:bg-white/[0.02]">
+                  <td class="px-6 py-6 font-bold text-white">
+                    {{ ws.domain }}
+                  </td>
+                  <td class="px-6 py-6 font-mono text-[11px] text-accent">
+                    {{ ws.location.path }}
+                  </td>
+                  <td
+                    class="px-6 py-6 font-mono text-[11px] text-slate-400 truncate max-w-[200px]"
+                  >
+                    {{ ws.proxy_target }}
+                  </td>
+                  <td class="px-6 py-6 text-center">
+                    <span class="inline-block w-20 px-2 py-1 rounded text-[9px] font-black tracking-widest border border-white/5 uppercase {% if ws.handshake_quality == 'GOOD' %}text-success bg-success/10{% elif ws.handshake_quality == 'DEGRADED' %}text-warning bg-warning/10{% else %}text-critical bg-critical/10{% endif %}">
+                      {{ ws.handshake_quality }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-6 text-center">
+                    <span class="inline-block w-16 px-2 py-1 rounded text-[9px] font-black tracking-widest border border-white/5 uppercase {% if ws.buffering == 'off' or ws.buffering == 'default' %}text-success bg-success/10{% else %}text-warning bg-warning/10{% endif %}">
+                      {{ ws.buffering }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-6 text-center text-[10px] text-slate-400">
+                    {% if ws.read_timeout %}R {{ ws.read_timeout }}s{% else %}R n/a{% endif %}
+                    <br />
+                    {% if ws.send_timeout %}S {{ ws.send_timeout }}s{% else %}S n/a{% endif %}
+                  </td>
+                  <td class="px-6 py-6 text-center">
+                    <span
+                      class="inline-block w-20 px-2 py-1 rounded bg-slate-800 text-[9px] font-black tracking-widest border border-white/5 uppercase {% if ws.risk_level == 'OK' %}text-success{% elif ws.risk_level == 'WARNING' %}text-warning{% else %}text-critical{% endif %}"
+                    >
+                      {{ ws.risk_level }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-6 text-[10px] text-slate-400">
+                    {% if ws_probe %}
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if ws_probe.status == '101' %}bg-success/20 text-success{% elif ws_probe.status in ['426','404','handshake_error','timeout'] %}bg-warning/20 text-warning{% else %}bg-slate-700 text-slate-300{% endif %}">
+                      {{ ws_probe.status }}
+                    </span>
+                    <div class="mt-1">{{ ws_probe.detail }}</div>
+                    {% else %}
+                    <span class="text-slate-500">n/a</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- Artifacts Section -->
+        <section id="artifacts" class="mb-12 pt-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="heading-font text-3xl font-bold flex items-center gap-3">
+              <i data-lucide="file-json" class="text-accent w-8 h-8"></i>
+              Raw Artifacts
+            </h3>
+            <span
+              class="px-4 py-1 rounded-full border border-white/10 glass text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >
+              Complete Dump
+            </span>
+          </div>
+
+          {% if unreferenced %}
+          <div class="glass p-6 rounded-[2rem] border-white/5 mb-6">
+            <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Unreferenced Projects
+            </h4>
+            <div class="space-y-2">
+              {% for item in unreferenced %}
+              <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                <p class="font-mono text-xs text-slate-300">
+                  {{ item.path if item.path is defined else item }}
+                </p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if static_noise %}
+          <div class="glass p-6 rounded-[2rem] border-white/5 mb-6">
+            <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Static Noise Candidates
+            </h4>
+            <div class="space-y-2">
+              {% for item in static_noise %}
+              <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                <p class="font-mono text-xs text-slate-300">{{ item }}</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if suppressed_findings %}
+          <div class="glass p-6 rounded-[2rem] border-white/5 mb-6">
+            <h4 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Waived Findings ({{ suppressed_findings|length }})
+            </h4>
+            {% if waiver_source %}
+            <p class="text-xs text-slate-500 mb-3">Source: <span class="font-mono">{{ waiver_source }}</span></p>
+            {% endif %}
+            <div class="space-y-2 max-h-56 overflow-y-auto">
+              {% for item in suppressed_findings %}
+              <div class="p-3 rounded-xl bg-black/20 border border-white/5">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-mono text-[10px] text-slate-400">{{ item.id }}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded {% if item.severity == 'CRITICAL' %}bg-critical/20 text-critical{% elif item.severity == 'WARNING' %}bg-warning/20 text-warning{% else %}bg-info/20 text-info{% endif %}">
+                    {{ item.severity }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-300">{{ item.condition }}</p>
+                <p class="text-[10px] text-slate-500 mt-1">Reason: {{ item.reason }}</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <details class="glass p-6 rounded-[2rem] border-white/5 mb-6">
+            <summary class="cursor-pointer text-sm font-bold text-slate-300">
+              Expand Server Model JSON
+            </summary>
+            <pre class="mt-4 p-4 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300 overflow-auto"><code>{{ model_json }}</code></pre>
+          </details>
+
+          <details class="glass p-6 rounded-[2rem] border-white/5">
+            <summary class="cursor-pointer text-sm font-bold text-slate-300">
+              Expand Findings JSON
+            </summary>
+            <pre class="mt-4 p-4 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300 overflow-auto"><code>{{ findings_json }}</code></pre>
+          </details>
+        </section>
+
+        <footer
+          class="mt-20 py-8 border-t border-white/10 text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest"
+        >
+          Generated by
+          <span class="text-accent underline">Server Doctor</span>
+          Engine v{{ model.doctor_version or "unknown" }}
+          {% if model.commit_hash %}&bull; Commit {{ model.commit_hash }}{% endif %}
+          {% if model.scan_timestamp %}&bull; Scan {{ model.scan_timestamp }}{% endif %}
+        </footer>
+      </main>
+    </div>
+
+    <!-- Data Layer -->
+    <script id="findings-json" type="application/json">
+      {{ findings_chart_data | tojson }}
+    </script>
+
+    <!-- Script Injection -->
+    <script>
+      // Init Lucide
+      lucide.createIcons();
+
+      // Data processing for JS
+      const findingsDataRaw = JSON.parse(
+        document.getElementById("findings-json").textContent,
+      );
+      const findingsData = findingsDataRaw.map((f) => ({
+        ...f,
+        severity: String(f.severity || "").toUpperCase(),
+      }));
+
+      // Apply dynamic widths to progress bars (Fixes CSS lint errors)
+      document.querySelectorAll(".progress-bar").forEach((bar) => {
+        const width = parseFloat(bar.getAttribute("data-width")) * 100;
+        bar.style.width = width + "%";
+      });
+
+      const sevCounts = {
+        CRITICAL: findingsData.filter((f) => f.severity === "CRITICAL").length,
+        WARNING: findingsData.filter((f) => f.severity === "WARNING").length,
+        INFO: findingsData.filter((f) => f.severity === "INFO").length,
+      };
+
+      // Update stats
+      document.getElementById("crit-count").innerText = sevCounts.CRITICAL;
+      document.getElementById("warn-count").innerText = sevCounts.WARNING;
+      document.getElementById("info-count").innerText = sevCounts.INFO;
+
+      // Health Scoring Logic (backend-calculated exploitability-aware score)
+      const finalScore = Number({{ report_score | default(0) }});
+
+      document.getElementById("scoreValue").innerText = finalScore;
+
+      let scoreColor = "#10b981"; // Success
+      let scoreMsg = "Excellent";
+      if (finalScore < 60) {
+        scoreColor = "#ef4444"; // Critical
+        scoreMsg = "Poor Health";
+      } else if (finalScore < 85) {
+        scoreColor = "#f59e0b"; // Warning
+        scoreMsg = "Maintenance Needed";
+      }
+
+      const badge = document.getElementById("health-badge");
+      badge.innerText = scoreMsg.toUpperCase();
+      badge.style.backgroundColor = scoreColor + "20";
+      badge.style.color = scoreColor;
+      badge.style.border = "1px solid " + scoreColor + "40";
+
+      const healthMsg = document.getElementById("healthMessage");
+      healthMsg.innerText = scoreMsg;
+      healthMsg.style.backgroundColor = scoreColor + "20";
+      healthMsg.style.color = scoreColor;
+
+      // Health Chart
+      new Chart(document.getElementById("healthChart"), {
+        type: "doughnut",
+        data: {
+          datasets: [
+            {
+              data: [finalScore, 100 - finalScore],
+              backgroundColor: [scoreColor, "rgba(255,255,255,0.05)"],
+              borderWidth: 0,
+              circumference: 270,
+              rotation: 225,
+              cutout: "85%",
+              borderRadius: 20,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        },
+      });
+
+      // Category Chart
+      new Chart(document.getElementById("categoryChart"), {
+        type: "bar",
+        data: {
+          labels: ["CRITICAL", "WARNING", "INFO"],
+          datasets: [
+            {
+              label: "Findings",
+              data: [sevCounts.CRITICAL, sevCounts.WARNING, sevCounts.INFO],
+              backgroundColor: ["#ef4444", "#f59e0b", "#3b82f6"],
+              borderRadius: 12,
+              maxBarThickness: 40
+            }
+          ]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(15, 23, 42, 0.9)",
+              titleFont: { family: "Outfit", size: 12, weight: "bold" },
+              bodyFont: { family: "Inter", size: 11 },
+              padding: 12,
+              cornerRadius: 8,
+              displayColors: false
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: "rgba(255, 255, 255, 0.05)", drawBorder: false },
+              ticks: { color: "#64748b", font: { weight: "bold", size: 10 }, precision: 0 }
+            },
+            y: {
+              grid: { display: false, drawBorder: false },
+              ticks: { color: "#f8fafc", font: { weight: "bold", size: 11 } }
+            }
+          }
+        }
+        btns.forEach((b) => {
+          b.classList.remove("bg-white/10", "text-white");
+          b.classList.add("text-slate-500");
+        });
+        const activeBtn =
+          buttonEl ||
+          document.querySelector(`.filter-btn[data-filter="${normalizedSeverity}"]`);
+        if (activeBtn) {
+          activeBtn.classList.add("bg-white/10", "text-white");
+          activeBtn.classList.remove("text-slate-500");
+        }
+
+        cards.forEach((card) => {
+          const cardSeverity = String(card.getAttribute("data-severity") || "").toUpperCase();
+          const isExpected = card.getAttribute("data-expected") === "1";
+          if (
+            normalizedSeverity === "ALL" ||
+            cardSeverity === normalizedSeverity
+          ) {
+            card.style.display = hideExpected && isExpected ? "none" : "flex";
+          } else {
+            card.style.display = "none";
+          }
+        });
+      }
+
+      function updateSystemdCleanNote() {
+        const note = document.getElementById("systemd-clean-note");
+        if (!note) {
+          return;
+        }
+        const visibleRows = Array.from(document.querySelectorAll(".systemd-row")).filter(
+          (row) => row.style.display !== "none",
+        );
+        note.style.display = visibleRows.length === 0 ? "block" : "none";
+      }
+
+      function toggleSystemdNoise(buttonEl) {
+        const rows = document.querySelectorAll(".systemd-row.systemd-noise");
+        const showAll = buttonEl.getAttribute("data-expanded") !== "true";
+        rows.forEach((row) => {
+          row.style.display = showAll ? "flex" : "none";
+        });
+        buttonEl.setAttribute("data-expanded", showAll ? "true" : "false");
+        const hiddenCount = rows.length;
+        buttonEl.textContent = showAll
+          ? "Show Filtered"
+          : `Show All${hiddenCount ? ` (${hiddenCount} hidden)` : ""}`;
+        updateSystemdCleanNote();
+      }
+
+      (function initSystemdNoise() {
+        const btn = document.getElementById("toggle-systemd-noise");
+        if (!btn) {
+          return;
+        }
+        const hiddenCount = document.querySelectorAll(".systemd-row.systemd-noise").length;
+        btn.setAttribute("data-expanded", "false");
+        btn.textContent = `Show All${hiddenCount ? ` (${hiddenCount} hidden)` : ""}`;
+        updateSystemdCleanNote();
+      })();
+
+      (function initExpectedRouteToggle() {
+        const toggle = document.getElementById("toggle-hide-expected-route");
+        if (!toggle) return;
+        toggle.addEventListener("change", () => filterFindings("ALL"));
+      })();
+
+      (function initDensityToggle() {
+        const key = "ServerDoctor.uiDensity";
+        const body = document.body;
+        const btn = document.getElementById("ui-density-toggle");
+        const label = document.getElementById("ui-density-label");
+        if (!btn || !label) {
+          return;
+        }
+
+        const apply = (mode) => {
+          const compact = mode !== "comfortable";
+          body.classList.toggle("ui-compact", compact);
+          label.textContent = compact ? "Compact UI" : "Comfortable UI";
+        };
+
+        let mode = "compact";
+        try {
+          const stored = window.localStorage.getItem(key);
+          if (stored === "compact" || stored === "comfortable") {
+            mode = stored;
+          }
+        } catch (_) {}
+        apply(mode);
+
+        btn.addEventListener("click", () => {
+          mode = body.classList.contains("ui-compact") ? "comfortable" : "compact";
+          apply(mode);
+          try {
+            window.localStorage.setItem(key, mode);
+          } catch (_) {}
+        });
+      })();
+
+      (function initSidebarNavigation() {
+        const main = document.getElementById("report-main");
+        const links = Array.from(document.querySelectorAll(".nav-link[data-target]"));
+        if (!main || !links.length) {
+          return;
+        }
+
+        const sections = links
+          .map((link) => {
+            const id = link.getAttribute("data-target");
+            return { id, el: id ? document.getElementById(id) : null };
+          })
+          .filter((entry) => entry.id && entry.el);
+
+        if (!sections.length) {
+          return;
+        }
+
+        const sectionsByOffset = () =>
+          sections
+            .slice()
+            .sort((a, b) => a.el.offsetTop - b.el.offsetTop);
+
+        const setActive = (id) => {
+          links.forEach((link) => {
+            link.classList.toggle("is-active", link.getAttribute("data-target") === id);
+          });
+        };
+
+        const scrollToSection = (id, smooth = true) => {
+          const target = document.getElementById(id);
+          if (!target) {
+            return;
+          }
+          main.scrollTo({
+            top: Math.max(0, target.offsetTop - 16),
+            behavior: smooth ? "smooth" : "auto",
+          });
+          setActive(id);
+        };
+
+        links.forEach((link) => {
+          link.addEventListener("click", (event) => {
+            const id = link.getAttribute("data-target");
+            if (!id) {
+              return;
+            }
+            event.preventDefault();
+            scrollToSection(id, true);
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState(null, "", `#${id}`);
+            }
+          });
+        });
+
+        let ticking = false;
+        const onScroll = () => {
+          if (ticking) {
+            return;
+          }
+          ticking = true;
+          window.requestAnimationFrame(() => {
+            const ordered = sectionsByOffset();
+            const y = main.scrollTop + 120;
+            let activeId = ordered[0].id;
+            for (const section of ordered) {
+              if (section.el.offsetTop <= y) {
+                activeId = section.id;
+              } else {
+                break;
+              }
+            }
+            setActive(activeId);
+            ticking = false;
+          });
+        };
+
+        main.addEventListener("scroll", onScroll, { passive: true });
+
+        const hashTarget = window.location.hash ? window.location.hash.replace("#", "") : "";
+        if (hashTarget && sections.some((section) => section.id === hashTarget)) {
+          scrollToSection(hashTarget, false);
+        } else {
+          const ordered = sectionsByOffset();
+          setActive(ordered[0].id);
+        }
+        onScroll();
+      })();
+    </script>
+  </body>
+</html>
